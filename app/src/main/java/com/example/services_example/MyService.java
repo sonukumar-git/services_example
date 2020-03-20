@@ -11,6 +11,7 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.database.ContentObserver;
 import android.database.Cursor;
+import android.graphics.Color;
 import android.media.MediaPlayer;
 import android.net.Uri;
 import android.os.Build;
@@ -29,9 +30,11 @@ import androidx.core.app.NotificationCompat;
 import java.io.File;
 import java.security.PublicKey;
 
+import static com.example.services_example.MainActivity.CHANNEL_ID;
+
 public class MyService extends Service {
     public static final String SERVICE_ID = "Foreground_Service";
-    int NOTIFICATION_ID=1;
+    int NOTIFICATION_ID = 1;
     private RemoteViews notificationView = null;
     private NotificationCompat.Builder notificationBuilder;
     private NotificationManager notificationManager = null;
@@ -47,11 +50,10 @@ public class MyService extends Service {
 
     @Override
     public void onCreate() {
-     //   myPlayer = MediaPlayer.create(this, R.raw.sun);
-       // myPlayer.setLooping(false);
+        //   myPlayer = MediaPlayer.create(this, R.raw.sun);
+        // myPlayer.setLooping(false);
 
         Toast.makeText(this, "Service Created", Toast.LENGTH_LONG).show();
-
 
 
     }
@@ -64,90 +66,96 @@ public class MyService extends Service {
 //       Toast.makeText(this, "total photo ="+imgNumber, Toast.LENGTH_SHORT).show();
 //    }
 
+
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
+
         String input = intent.getStringExtra("inputExtra");
+
         Intent notificationIntent = new Intent(this, MainActivity.class);
-        notificationIntent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
-        PendingIntent pendingIntent = PendingIntent.getActivity(this, 0, notificationIntent, flags);
+        //  notificationIntent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
+        PendingIntent pendingIntent = PendingIntent.getActivity(this,
+                0, notificationIntent, 0);
 
-        notificationView = new RemoteViews(this.getPackageName(), R.layout.layout_bobble_notification);
-
-        notificationView.setImageViewResource(R.id.ivBobbleLogo,R.drawable.ic_launcher);
-        notificationView.setImageViewResource(R.id.ivCancel,R.drawable.cancel);
-
-//        Notification notification = new NotificationCompat.Builder(this, SERVICE_ID)
-//                .setContentTitle("Service Started")
-//                .setContentText(input)
-//                .setSmallIcon(R.drawable.ic_launcher_background)
+//        Notification notification = new NotificationCompat.Builder(this, CHANNEL_ID)
+//                .setContentTitle("Enable \uD83C\uDF1FBobble AI Keyboard\uD83C\uDF1F")
+//                .setContentText("Don’t miss the fun")
+//                .setSmallIcon(R.drawable.ic_launcher)
 //                .setContentIntent(pendingIntent)
+//                .setAutoCancel(false)
 //                .build();
+//
+//        startForeground(1, notification);
 
+        //do heavy work on a background thread
+        //stopSelf();
+        notificationBuilder = new NotificationCompat.Builder(this);
         notificationManager = (NotificationManager) this.getSystemService(Context.NOTIFICATION_SERVICE);
 
 
-
-        // The id of the channel.
-        String id = "Bobble_enable";
-        // Finally... Actually creating the Notification
-
-        notificationBuilder = new NotificationCompat.Builder(this, id);
-        // The user-visible name of the channel.
-        CharSequence name = "bop";
-
-        // The user-visible description of the channel.
-        String description = "music-player";
-
-        //createNotificationChannel();
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.HONEYCOMB) {
+            notificationBuilder.setSmallIcon(R.drawable.ic_launcher);
+            notificationBuilder.setContentTitle("ohhh")
+                    .setStyle(
+                            new NotificationCompat.BigTextStyle()
+                                    .bigText("hello"))
+                    .setAutoCancel(true).setDefaults(Notification.DEFAULT_SOUND)
+                    .setLights(Color.WHITE, 500, 500)
+                    .setContentText("ram ram");
+        } else {
 
 
-        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
-            int importance = NotificationManager.IMPORTANCE_DEFAULT;
-            NotificationChannel mChannel = null;
-            mChannel = new NotificationChannel(id, name, importance);
+            RemoteViews notificationView = new RemoteViews(getPackageName(), R.layout.layout_bobble_notification);
+            notificationView.setImageViewResource(R.id.ivBobbleLogo, R.drawable.ic_launcher);
+            notificationView.setTextViewText(R.id.tvBobbleKeyboard, "bbbb");
+            notificationView.setTextViewText(R.id.tvEnableBobbleKeyboard, "Enable \uD83C\uDF1FBobble AI Keyboard\uD83C\uDF1F");
 
-            // Configure the notification channel.
-            mChannel.setDescription(description);
-            notificationManager.createNotificationChannel(mChannel);
+
+            // The id of the channel.
+            String id = "Bop-MusicPlayer";
+            // Finally... Actually creating the Notification
+            // The user-visible name of the channel.
+            CharSequence name = "bop";
+
+            // The user-visible description of the channel.
+            String description = "music-player";
+
+
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+                int importance = NotificationManager.IMPORTANCE_DEFAULT;
+                NotificationChannel mChannel = null;
+                mChannel = new NotificationChannel(id, name, importance);
+
+                // Configure the notification channel.
+                mChannel.setDescription(description);
+                notificationManager.createNotificationChannel(mChannel);
+            }
+
+            notificationBuilder.setContentIntent(pendingIntent)
+                    .setContentTitle("Enable \uD83C\uDF1FBobble AI Keyboard\uD83C\uDF1F")
+                    .setContentText("Don’t miss the fun")
+                    .setSmallIcon(R.drawable.ic_launcher)
+                    .setAutoCancel(true)
+                    .setStyle(new NotificationCompat.BigPictureStyle())
+                    .setCustomContentView(notificationView)
+                    .setChannelId(id)
+                    .setCustomBigContentView(notificationView);
         }
 
-        notificationBuilder.setContentIntent(pendingIntent)
-                .setSmallIcon(R.drawable.ic_launcher)
-                .setOngoing(true)
-                .setStyle(new NotificationCompat.DecoratedCustomViewStyle())
-                .setContent(notificationView)
-                .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
-                .setCustomContentView(notificationView)
-                .setChannelId(id)
-                .setCustomBigContentView(notificationView);
-        // Sets the notification to run on the foreground.
-        // (why not the former commented line?)
+        notificationBuilder.setContentIntent(pendingIntent);
         Notification notification = notificationBuilder.build();
-        //this, SERVICE_ID)
-
         notificationManager.notify(NOTIFICATION_ID, notification);
         startForeground(NOTIFICATION_ID, notification);
 
 
-     //   startForeground(1, notification);
-
-        //start music
-      //  myPlayer.start();
-//        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-//            JobSchedulerServiceCustom.scheduleJob(this);
-//
-//        }
-
-        Toast.makeText(this, " MyService Started", Toast.LENGTH_LONG).show();
-
         return START_STICKY;
-    }
 
+    }
 
     @Override
     public void onDestroy() {
         Toast.makeText(this, "Service Stopped", Toast.LENGTH_SHORT).show();
-      //  myPlayer.stop();
+        //  myPlayer.stop();
 
     }
 
@@ -170,20 +178,5 @@ public class MyService extends Service {
         return number;
     }
 
-    private void createNotificationChannel() {
 
-
-
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            NotificationChannel serviceChannel = new NotificationChannel(
-                    SERVICE_ID,
-                    "Foreground Service Channel",
-                    NotificationManager.IMPORTANCE_DEFAULT
-            );
-            NotificationManager manager = getSystemService(NotificationManager.class);
-            manager.createNotificationChannel(serviceChannel);
-        }
-
-
-    }
 }
